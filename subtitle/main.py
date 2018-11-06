@@ -7,17 +7,17 @@ from subtitle.subtitle_downloader import SubtitleDownloader
 
 
 def main():
+    logging.basicConfig(level=logging.INFO)
     parser = argparse.ArgumentParser()
-
     parser.add_argument('-v', '--version', action='version', version=SubtitleDownloader.version(),
-                        help=u'Show version info.'
+                        help=u'show version info'
                         )
     parser.add_argument('-l', '--loop', action='store_true', dest='loop', default=False,
-                        help=u'Watch a directory(recursive), automatically download '
-                             u'subtitles when an aria2 task finishes.'
+                        help=u'watch a directory recursively, automatically download '
+                             u'subtitles when an aria2 task finishes'
                         )
     parser.add_argument('dest', action='store', default='.',
-                        help=u'The path of directory or video you need to download subtitles for.')
+                        help=u'path of directory or video file you need to download subtitles for')
 
     params = parser.parse_args()
     if params.loop:
@@ -28,7 +28,8 @@ def main():
             logging.error(u"The given path is invalid.")
     else:
         SubtitleDownloader.download_subtitle(params.dest)
-    logging.info(u"Done. :)")
+    logging.info(u"Bye :)")
+
 
 if __name__ == '__main__':
     main()

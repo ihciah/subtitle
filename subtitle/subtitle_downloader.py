@@ -2,29 +2,35 @@
 # __author__ = 'ihciah'
 # cid_hash_file function from https://github.com/binux/lixian.xunlei/blob/master/libs/tools.py
 # Original Gist: https://gist.github.com/ihciah/30eda05ca36ee9f9f190067538b0ae04
+# Github Repo: https://github.com/ihciah/subtitle
 
 import hashlib
 import os
 import sys
-import requests
-from requests.adapters import HTTPAdapter
-from requests.packages.urllib3 import Retry
+import urllib3
 import re
 import logging
+from urllib3.util import parse_url, Url
 from subtitle import config
+from subtitle.http_dns import dns_hijack
+dns_hijack(http_dns=config.http_dns)
 
 
 class SubtitleDownloader:
     @staticmethod
     def version():
-        return u'VERSION %s.\n\rSubtitle downloader by ihciah >_<' % config.__version__
+        return u'VERSION %s.\n\r' \
+               u'Subtitle downloader by ihciah >_< \n\r' \
+               u'https://github.com/ihciah/subtitle' % config.__version__
 
     @staticmethod
     def url_get(url):
-        s = requests.Session()
-        retry = Retry(total=3, method_whitelist=frozenset(['GET', 'POST']))
-        s.mount(u"http://", requests.adapters.HTTPAdapter(max_retries=retry))
-        return s.get(url)
+        url_part = parse_url(url)
+        UrlObj = Url(url_part.scheme, url_part.auth, url_part.host, url_part.port,
+                     url_part.path or None, url_part.query or None, url_part.fragment or None)
+        conn = urllib3.connection_from_url(url)
+        response = conn.request('GET', UrlObj.request_uri)
+        return response
 
     @staticmethod
     def download_srt(subtitle_url, video_base_path, video_name, num):
@@ -38,9 +44,9 @@ class SubtitleDownloader:
         if os.path.isfile(srt_file):
             return
         response = SubtitleDownloader.url_get(subtitle_url)
-        if response.status_code == 200:
+        if response.status == 200:
             with open(os.path.join(video_base_path, video_name + u'.%d.' % num + subtitle_type), 'wb') as f:
-                f.write(response.content)
+                f.write(response.data)
 
     @staticmethod
     def cid_hash_file(path):
@@ -61,15 +67,15 @@ class SubtitleDownloader:
     def fetch_subtitle_list(cid):
         patten = re.compile(b'surl="(.*?)"')
         url_base = u'http://subtitle.kankan.xunlei.com:8000/submatch/%s/%s/%s.lua'
-        r = SubtitleDownloader.url_get(url_base % (cid[:2], cid[-2:], cid)).content
+        r = SubtitleDownloader.url_get(url_base % (cid[:2], cid[-2:], cid)).data
         srt_urls = patten.findall(r)[:config.download_count]
         return list(map(lambda url: url.decode(u'utf-8'), srt_urls))
 
     @staticmethod
     def download_subtitle(video):
-        logging.debug(u"Processing: %s" % video)
+        logging.info(u"Processing: {}".format(video))
         if not video:
-            logging.error(u"Video file or dir does not exist. (%s)" % video)
+            logging.error(u"Video file or dir does not exist: %s".format(video))
             return -1
         if os.path.isdir(video):
             if sys.version_info.major == 2:
@@ -81,27 +87,27 @@ class SubtitleDownloader:
                          os.listdir(video)))
             return
         if not os.path.isfile(video):
-            logging.error(u"Video file does not exist. (%s)" % video)
+            logging.error(u"Video file does not exist: {}".format(video))
             return -1
         video_base_path, video_filename = os.path.split(os.path.abspath(video))
         if not video_base_path or not video_filename:
-            logging.error(u"Something error... (%s)" % video)
+            logging.error(u"Something error: {}".format(video))
             return -1
         dot = video_filename.rfind(u'.')
-        if dot < 0:
-            logging.info(u"Not a video file. (%s)" % video_filename)
+        if dot <= 0:
+            logging.info(u"File doesn't have a suffix or without a name: {}".format(video_filename))
             return -1
         video_name = video_filename[:dot]
         video_type = video_filename[dot+1:]
         if video_type.lower() not in config.video_types:
-            logging.info(u"Not a video file. (%s)" % video)
+            logging.info(u"Not a video file: {}".format(video_filename))
             return -2
         cid = SubtitleDownloader.cid_hash_file(video)
         subtitle_list = SubtitleDownloader.fetch_subtitle_list(cid)
         if not subtitle_list:
             logging.info(u"No subtitle available on the server.")
         else:
-            logging.info(u"Fetching %d subtitles." % len(subtitle_list))
+            logging.info(u"Fetching {} subtitles for: {}".format(len(subtitle_list), video_filename))
         for num, subtitle in enumerate(subtitle_list):
             SubtitleDownloader.download_srt(subtitle, video_base_path, video_name, num)
         logging.info(u"Done.")
@@ -126,7 +132,3 @@ class SubtitleDownloader:
                         pass
         except:
             pass
-
-if __name__ == '__main__':
-    logging.basicConfig(level=logging.DEBUG)
-    SubtitleDownloader.inotify_loop(b'/hdd/downloads')
