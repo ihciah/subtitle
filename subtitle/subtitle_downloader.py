@@ -10,6 +10,7 @@ import sys
 import urllib3
 import re
 import logging
+import subprocess
 from urllib3.util import parse_url, Url
 from subtitle import config
 from subtitle.http_dns import dns_hijack
@@ -106,6 +107,17 @@ class SubtitleDownloader:
         subtitle_list = SubtitleDownloader.fetch_subtitle_list(cid)
         if not subtitle_list:
             logging.info(u"No subtitle available on the server.")
+            logging.info(u"Falling back to search by filename".format(video))
+            subtitle = ""
+            try:
+                subtitle = subprocess.check_output(["opensubtitles_downloader", "-f", video]).decode("utf-8")
+            except:
+                logging.error(u"Search by name failed as well")
+
+            if "file downloaded" in subtitle:
+                logging.info(u"Subtitle file downloaded:{}.srt".format(video_name))
+            else:
+                logging.error(u"Search by name failed as well")
         else:
             logging.info(u"Fetching {} subtitles for: {}".format(len(subtitle_list), video_filename))
         for num, subtitle in enumerate(subtitle_list):

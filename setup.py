@@ -23,7 +23,8 @@ setup(
     package_data={'': ['LICENSES']},
     include_package_data=True,
     zip_safe=False,
-    install_requires=['requests>=2.17', 'inotify', 'urllib3>=1.23'],
+    install_requires=['requests>=2.17', 'inotify', 'urllib3>=1.23',
+                      'opensubtitles-downloader'],
     entry_points={
         'console_scripts': [
             'sub = subtitle.main:main',
