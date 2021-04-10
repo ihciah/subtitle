@@ -23,7 +23,7 @@ setup(
     package_data={'': ['LICENSES']},
     include_package_data=True,
     zip_safe=False,
-    install_requires=['requests>=2.17', 'inotify', 'urllib3>=1.23'],
+    install_requires=['requests>=2.17', 'urllib3>=1.23'],
     entry_points={
         'console_scripts': [
             'sub = subtitle.main:main',
@@ -44,6 +44,8 @@ setup(
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: Implementation :: CPython',
         'Programming Language :: Python :: Implementation :: PyPy'
     ],
